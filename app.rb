@@ -44,21 +44,21 @@ get '/api/check' do
 	response.to_json
 end
 
-# get '/api/checku' do
-# 	response = check_used(params[:name])
-# 	response.to_json
-# end
+get '/api/checku' do
+	response = check_used(params[:name])
+	response.to_json
+end
 
-# get '/api/clear' do
-# 	# Remove a value from the queue
-# 	name = params[:name]
-# 	response = clear_name_from_queue(name)
-# end
+get '/api/clear' do
+	# Remove a value from the queue
+	name = params[:name]
+	response = clear_name_from_queue(name)
+end
 
-# get '/api/rebuild' do
-# 	# Rebuild the queue, sorting and ignoring blank rows
-# 	response = rebuild_queue.inspect
-# end
+get '/api/rebuild' do
+	# Rebuild the queue, sorting and ignoring blank rows
+	response = rebuild_queue.to_json
+end
 
 private
 
@@ -76,10 +76,14 @@ end
 
 def check_used(name)
 	used = @drive.get_spreadsheet_values(ENV['SHEET_ID'], 'Used').values
-	used_names = used.map{|u| comparable(u[1])}
-	used_index = used_names.index comparable(name)
-	if used_index
-		response = "#{name} already Used at #{used[used_index][0]}."
+	if used
+		used_names = used.map{|u| comparable(u[0])}
+		used_index = used_names.index comparable(name)
+		if used_index
+			response = "#{name} already Used at #{used[used_index][1]}."
+		else
+			response = nil
+		end
 	else
 		response = nil
 	end
@@ -89,7 +93,8 @@ def check_used_and_queued(name)
 	queue = @drive.get_spreadsheet_values(ENV['SHEET_ID'], 'Queue').values.flatten.map{|q| comparable(q)}
 	response = check_used(name)
 	unless response
-		queue_index = queue.index comparable(name)
+		queued_names = queue.map{|u| comparable(u[0])}
+		queue_index = queued_names.index comparable(name)
 		if queue_index
 			response = "#{name} is already Queued."
 		else
@@ -99,32 +104,14 @@ def check_used_and_queued(name)
 	response
 end
 
-def check_used_and_queued_old(name)
-	used = @drive.get_spreadsheet_values(ENV['SHEET_ID'], 'Used').values
-	used_names = used.map{|u| comparable(u[1])}
-	queue = @drive.get_spreadsheet_values(ENV['SHEET_ID'], 'Queue').values.flatten.map{|q| comparable(q)}
-	used_index = used_names.index comparable(name)
-	if used_index
-		response = "#{name} already Used at #{used[used_index][0]}."
-	else
-		queue_index = queue.index comparable(name)
-		if queue_index
-			response = "#{name} is already Queued."
-		else
-			response = nil
-		end
-	end
-end
-
 def add_name_to_queue(name)
-	value_range = Google::Apis::SheetsV4::ValueRange.new(values: [[comparable(name)]])
+	value_range = Google::Apis::SheetsV4::ValueRange.new(values: [[comparable(name), nice_time]])
 	result = @drive.append_spreadsheet_value(ENV['SHEET_ID'], 'Queue', value_range, value_input_option: 'RAW')
 	response = "#{name} added to Queue."
 end
 
 def add_name_to_used(name)
-	nice_time = Time.now.strftime("%a %b %e %Y %l:%M %p")
-	value_range = Google::Apis::SheetsV4::ValueRange.new(values: [[nice_time, comparable(name)]])
+	value_range = Google::Apis::SheetsV4::ValueRange.new(values: [[comparable(name), nice_time]])
 	result = @drive.append_spreadsheet_value(ENV['SHEET_ID'], 'Used', value_range, value_input_option: 'RAW')
 	response = "#{name} Used at #{nice_time}."
 end
@@ -134,8 +121,8 @@ def clear_name_from_queue(name)
 	queue_index = queue.index comparable(name)
 	if queue_index
 		row = queue_index + 1
-		range = "Queue!A#{row}"
-		value_range = Google::Apis::SheetsV4::ValueRange.new(range: range, values: [['']])
+		range = "Queue!A#{row}:B#{row}"
+		value_range = Google::Apis::SheetsV4::ValueRange.new(range: range, values: [['','']])
 		result = @drive.update_spreadsheet_value(ENV['SHEET_ID'], range, value_range, value_input_option: 'RAW')
 		response = "#{name} cleared from Queue row #{row}."
 	else
@@ -146,17 +133,17 @@ end
 def rebuild_queue
 	# queue = @drive.get_spreadsheet_values(ENV['SHEET_ID'], 'Queue').values.flatten
 	queue = @drive.get_spreadsheet_values(ENV['SHEET_ID'], 'Queue').values
-	sorted_queue = queue.sort.flatten.map{|s| [s]}
+	sorted_queue = queue.reject(&:empty?).sort_by{|q| comparable(q[0])}.map{|q| [comparable(q[0]), (q[1] || '')]}
 
-	range = "Queue!A:A" # Column A
-	value_range = Google::Apis::SheetsV4::ValueRange.new(range: range, values: sorted_queue, majorDimension: 'COLUMNS')
+	range = "Queue!A:B" # Column A & B
+	value_range = Google::Apis::SheetsV4::ValueRange.new(range: range, values: sorted_queue)
 	result = @drive.update_spreadsheet_value(ENV['SHEET_ID'], range, value_range, value_input_option: 'RAW')
 	
 	if sorted_queue.size < queue.size
 		# Add blanks for any rows that had blanks
 		rows = (0..queue.size).to_a - (0..sorted_queue.size).to_a
-		range = "Queue!A#{rows.first}:A#{rows.last}"
-		value_range = Google::Apis::SheetsV4::ValueRange.new(range: range, values: [['']])
+		range = "Queue!A#{rows.first}:B#{rows.last}"
+		value_range = Google::Apis::SheetsV4::ValueRange.new(range: range, values: [['','']])
 		result = @drive.update_spreadsheet_value(ENV['SHEET_ID'], range, value_range, value_input_option: 'RAW')
 	end
 end
@@ -164,4 +151,8 @@ end
 def comparable(text)
 	# lower the case and kill spaces
 	text.downcase.gsub(' ','') if text
+end
+
+def nice_time
+	Time.now.strftime("%a %b %e %Y %l:%M %p")
 end
