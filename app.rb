@@ -105,20 +105,21 @@ def check_used_and_queued(name)
 end
 
 def add_name_to_queue(name)
-	value_range = Google::Apis::SheetsV4::ValueRange.new(values: [[comparable(name), nice_time]])
+	value_range = Google::Apis::SheetsV4::ValueRange.new(values: [[name, nice_time]])
 	result = @drive.append_spreadsheet_value(ENV['SHEET_ID'], 'Queue', value_range, value_input_option: 'RAW')
 	response = "OK: '#{name}'' added to Queue."
 end
 
 def add_name_to_used(name, by)
-	value_range = Google::Apis::SheetsV4::ValueRange.new(values: [[comparable(name), nice_time, by]])
+	value_range = Google::Apis::SheetsV4::ValueRange.new(values: [[name, nice_time, by]])
 	result = @drive.append_spreadsheet_value(ENV['SHEET_ID'], 'Used!A:C', value_range, value_input_option: 'RAW')
 	response = "OK: '#{name}' Used by '#{by}' at #{nice_time}."
 end
 
 def clear_name_from_queue(name)
-	queue = @drive.get_spreadsheet_values(ENV['SHEET_ID'], 'Queue').values.flatten
-	queue_index = queue.index comparable(name)
+	queue = @drive.get_spreadsheet_values(ENV['SHEET_ID'], 'Queue!A:A').values.flatten
+	queued_names = queue.map{|q| comparable(q)}
+	queue_index = queued_names.index comparable(name)
 	if queue_index
 		row = queue_index + 1
 		range = "Queue!A#{row}:B#{row}"
@@ -133,7 +134,7 @@ end
 def rebuild_queue
 	# queue = @drive.get_spreadsheet_values(ENV['SHEET_ID'], 'Queue').values.flatten
 	queue = @drive.get_spreadsheet_values(ENV['SHEET_ID'], 'Queue').values
-	sorted_queue = queue.reject(&:empty?).sort_by{|q| comparable(q[0])}.map{|q| [comparable(q[0]), (q[1] || '')]}
+	sorted_queue = queue.reject(&:empty?).sort_by{|q| comparable(q[0])}.map{|q| [q[0], (q[1] || '')]}
 
 	range = "Queue!A:B" # Column A & B
 	value_range = Google::Apis::SheetsV4::ValueRange.new(range: range, values: sorted_queue)
