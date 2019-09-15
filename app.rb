@@ -18,25 +18,26 @@ get '/' do
 	"We are trying."
 end
 
-get '/api/queue' do
+post '/api/queue' do
 	name = params[:name]
 	response = check_used_and_queued(name)
 	unless response
 		response = add_name_to_queue(name)
 		rebuild_queue
 	end
-	response
+	response.to_json
 end
 
-get '/api/use' do
+post '/api/use' do
 	name = params[:name]
+	by = params[:by] || 'cb'
 	response = check_used(name)
 	unless response
-		response = add_name_to_used(name)
+		response = add_name_to_used(name, by)
 		clear_name_from_queue(name)
 		rebuild_queue
 	end
-	response
+	response.to_json
 end
 
 get '/api/check' do
@@ -44,21 +45,20 @@ get '/api/check' do
 	response.to_json
 end
 
-get '/api/checku' do
-	response = check_used(params[:name])
-	response.to_json
-end
+# get '/api/checku' do
+# 	response = check_used(params[:name])
+# 	response.to_json
+# end
 
-get '/api/clear' do
-	# Remove a value from the queue
-	name = params[:name]
-	response = clear_name_from_queue(name)
-end
+# get '/api/clear' do
+# 	# Remove a value from the queue
+# 	response = clear_name_from_queue(params[:name])
+# end
 
-get '/api/rebuild' do
-	# Rebuild the queue, sorting and ignoring blank rows
-	response = rebuild_queue.to_json
-end
+# get '/api/rebuild' do
+# 	# Rebuild the queue, sorting and ignoring blank rows
+# 	response = rebuild_queue.to_json
+# end
 
 private
 
@@ -80,7 +80,7 @@ def check_used(name)
 		used_names = used.map{|u| comparable(u[0])}
 		used_index = used_names.index comparable(name)
 		if used_index
-			response = "#{name} already Used at #{used[used_index][1]}."
+			response = "OOPS: '#{name}' already Used at #{used[used_index][1]}."
 		else
 			response = nil
 		end
@@ -90,13 +90,13 @@ def check_used(name)
 end
 
 def check_used_and_queued(name)
-	queue = @drive.get_spreadsheet_values(ENV['SHEET_ID'], 'Queue').values.flatten.map{|q| comparable(q)}
+	queue = @drive.get_spreadsheet_values(ENV['SHEET_ID'], 'Queue!A:A').values.flatten
 	response = check_used(name)
 	unless response
-		queued_names = queue.map{|u| comparable(u[0])}
+		queued_names = queue.map{|q| comparable(q)}
 		queue_index = queued_names.index comparable(name)
 		if queue_index
-			response = "#{name} is already Queued."
+			response = "OOPS: '#{name}' is already Queued."
 		else
 			response = nil
 		end
@@ -107,13 +107,13 @@ end
 def add_name_to_queue(name)
 	value_range = Google::Apis::SheetsV4::ValueRange.new(values: [[comparable(name), nice_time]])
 	result = @drive.append_spreadsheet_value(ENV['SHEET_ID'], 'Queue', value_range, value_input_option: 'RAW')
-	response = "#{name} added to Queue."
+	response = "OK: '#{name}'' added to Queue."
 end
 
-def add_name_to_used(name)
-	value_range = Google::Apis::SheetsV4::ValueRange.new(values: [[comparable(name), nice_time]])
-	result = @drive.append_spreadsheet_value(ENV['SHEET_ID'], 'Used', value_range, value_input_option: 'RAW')
-	response = "#{name} Used at #{nice_time}."
+def add_name_to_used(name, by)
+	value_range = Google::Apis::SheetsV4::ValueRange.new(values: [[comparable(name), nice_time, by]])
+	result = @drive.append_spreadsheet_value(ENV['SHEET_ID'], 'Used!A:C', value_range, value_input_option: 'RAW')
+	response = "OK: '#{name}' Used by '#{by}' at #{nice_time}."
 end
 
 def clear_name_from_queue(name)
