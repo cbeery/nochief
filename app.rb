@@ -7,12 +7,13 @@ require 'dotenv/load'
 require 'active_support/time'
 # require 'sass'
 
-before do
-	drive_setup
-end
-
 before '/api/*' do
 	content_type 'application/json'
+	check_passphrase
+end
+
+before do
+	drive_setup
 end
 
 get '/' do 
@@ -157,4 +158,10 @@ end
 
 def timestamp
 	Time.now.in_time_zone('US/Mountain').strftime("%a %b %e %Y %l:%M %p")
+end
+
+def check_passphrase
+	unless params[:passphrase] && params[:passphrase] == ENV['PASSPHRASE']
+		halt 401, {'Content-Type' => 'application/json'}, 'bad passphrase, sorry'
+	end
 end
