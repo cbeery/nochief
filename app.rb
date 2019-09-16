@@ -4,6 +4,7 @@ require 'sinatra/reloader' if development?
 require 'google/apis/sheets_v4'
 require 'signet/oauth_2/client'
 require 'dotenv/load'
+require 'active_support/time'
 # require 'sass'
 
 before do
@@ -105,15 +106,15 @@ def check_used_and_queued(name)
 end
 
 def add_name_to_queue(name)
-	value_range = Google::Apis::SheetsV4::ValueRange.new(values: [[name, nice_time]])
+	value_range = Google::Apis::SheetsV4::ValueRange.new(values: [[name, timestamp]])
 	result = @drive.append_spreadsheet_value(ENV['SHEET_ID'], 'Queue', value_range, value_input_option: 'RAW')
 	response = "OK: '#{name}'' added to Queue."
 end
 
 def add_name_to_used(name, by)
-	value_range = Google::Apis::SheetsV4::ValueRange.new(values: [[name, nice_time, by]])
+	value_range = Google::Apis::SheetsV4::ValueRange.new(values: [[name, timestamp, by]])
 	result = @drive.append_spreadsheet_value(ENV['SHEET_ID'], 'Used!A:C', value_range, value_input_option: 'RAW')
-	response = "OK: '#{name}' Used by '#{by}' at #{nice_time}."
+	response = "OK: '#{name}' Used by '#{by}' at #{timestamp}."
 end
 
 def clear_name_from_queue(name)
@@ -154,6 +155,6 @@ def comparable(text)
 	text.downcase.gsub(' ','') if text
 end
 
-def nice_time
-	Time.now.strftime("%a %b %e %Y %l:%M %p")
+def timestamp
+	Time.now.in_time_zone('US/Mountain').strftime("%a %b %e %Y %l:%M %p")
 end
