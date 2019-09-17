@@ -25,7 +25,8 @@ end
 
 get '/' do 
 	@used = @drive.get_spreadsheet_values(ENV['SHEET_ID'], 'Used').values
-	@by_day = @used.group_by{|u| u[1].to_date}
+	# @by_day = @used.group_by{|u| u[1].to_date}
+	@by_day = @used.group_by{|u| u[1].to_date}.sort_by(&:first).reverse
 	erb :index
 end
 
