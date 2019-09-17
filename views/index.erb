@@ -1,0 +1,35 @@
+<h1 class="mt-5">no more chief</h1>
+<h2>Things we've started saying instead of "chief"</h2>
+
+
+<div id="texts">
+	<% @by_day.each do |day, names| %>
+
+		<div class="row date">
+			<div class="col-12">
+				<%= display_date day %>
+			</div>
+		</div>
+
+		<% names.each do |name| %>
+			<div class="row text text-<%= name[2] %>">
+				<div class="col-3 col-sm-3 l-who">
+					<% if name[2] == 'cb' %>
+						<img src="img/cb.jpg"/ class="img-fluid img-thumbnail rounded-circle">
+					<% end %>
+				</div>
+				<div class="col-9 col-sm-6">
+					<div class="speech-bubble">
+						Hey <strong><%= name[0] %></strong>...
+					</div>
+				</div>
+				<div class="col-3 col-sm-3 r-who">
+					<% if name[2] != 'cb' %>
+						<img src="img/<%= name[2] %>.jpg"/ class="img-fluid img-thumbnail rounded-circle">
+					<% end %>
+				</div>
+			</div>
+		<% end %>
+
+	<% end %>
+</div>

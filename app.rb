@@ -1,11 +1,14 @@
 require 'sinatra'
 require 'sinatra/reloader' if development?
-# require 'sinatra/partial'
+require 'sinatra/partial'
 require 'google/apis/sheets_v4'
 require 'signet/oauth_2/client'
 require 'dotenv/load'
 require 'active_support/time'
-# require 'sass'
+require 'sass'
+
+set :partial_template_engine, :erb
+enable :partial_underscores
 
 before '/api/*' do
 	content_type 'application/json'
@@ -16,8 +19,14 @@ before do
 	drive_setup
 end
 
+get '/styles.css' do
+	scss :styles
+end
+
 get '/' do 
-	"We are trying."
+	@used = @drive.get_spreadsheet_values(ENV['SHEET_ID'], 'Used').values
+	@by_day = @used.group_by{|u| u[1].to_date}
+	erb :index
 end
 
 post '/api/queue' do
@@ -158,6 +167,10 @@ end
 
 def timestamp
 	Time.now.in_time_zone('US/Mountain').strftime("%a %b %e %Y %l:%M %p")
+end
+
+def display_date(date)
+	date.strftime("%a %b %e %Y")
 end
 
 def check_passphrase

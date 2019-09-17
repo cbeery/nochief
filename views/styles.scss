@@ -1,0 +1,105 @@
+$speech-bubble-pointer-size: 0.95;
+$cb-color: #c7eeee;
+$rg-color: #c7eecc;
+$footer-color: #eae9f8;
+
+
+footer {
+	background: $footer-color;
+}
+
+main {
+	margin-bottom: 5em;
+}
+
+.date,
+footer,
+h1, h2 {
+	text-align: center
+}
+
+h2 {
+	font-size: .8em;
+	font-weight: normal;
+	font-style: italic;
+	color: #888;
+}
+
+.date {
+	margin-top: 2em;
+	color: #aaa;
+	font-size: .9em;
+}
+
+.text {
+	margin-top: .4em;
+}
+
+.l-who {
+	text-align: right;
+}
+
+.l-who, .r-who {
+	img {
+		max-height: 50px;
+	}
+}
+
+// speech bubble https://leaverou.github.io/bubbly/
+.speech-bubble {
+	position: relative;
+	border-radius: .4em;
+	padding: .8em;
+}
+
+.speech-bubble:after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	width: 0;
+	height: 0;
+	border: #{$speech-bubble-pointer-size}em solid transparent;
+	border-top: 0;
+	margin-top: -#{$speech-bubble-pointer-size/2}em;
+}
+
+.text-cb {
+	.speech-bubble {
+		background: $cb-color;
+	}
+	.speech-bubble:after {
+		border-right-color: $cb-color;
+		left: 0;
+		border-left: 0;
+		margin-left: -#{$speech-bubble-pointer-size}em;
+	}
+}
+
+.text-rg {
+	.speech-bubble {
+		background: $rg-color;
+		text-align: right;
+	}
+
+	.speech-bubble:after {
+		border-left-color: $rg-color;
+		right: 0;
+		border-right: 0;
+		margin-right: -#{$speech-bubble-pointer-size}em;
+	}
+}
+
+.text-cb .r-who,
+.text-rg .l-who {
+	display: none;
+}
+
+@media (min-width: 576px) {
+	.text-cb .r-who,
+	.text-rg .l-who {
+		display: block;
+	}
+	h2 {
+		font-size: .9em;
+	}
+}
