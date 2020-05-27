@@ -1,3 +1,3 @@
 # nochief
 
-Alternatives to calling people "Chief"a
+Alternatives to calling people "Chief"
