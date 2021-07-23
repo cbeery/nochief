@@ -107,7 +107,7 @@ DEPENDENCIES
   sinatra-partial
 
 RUBY VERSION
-   ruby 2.4.5p335
+   ruby 2.7.4p191
 
 BUNDLED WITH
    1.17.2
