@@ -1,6 +1,6 @@
 require './app'
 
 require 'rack/ssl-enforcer'
-use Rack::SslEnforcer
+use Rack::SslEnforcer unless development?
 
 run Sinatra::Application
