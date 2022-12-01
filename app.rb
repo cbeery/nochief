@@ -5,7 +5,7 @@ require 'google/apis/sheets_v4'
 require 'signet/oauth_2/client'
 require 'dotenv/load'
 require 'active_support/time'
-require 'sass'
+# require 'sass'
 
 set :partial_template_engine, :erb
 enable :partial_underscores
@@ -19,9 +19,9 @@ before do
 	drive_setup
 end
 
-get '/styles.css' do
-	scss :styles
-end
+# get '/styles.css' do
+# 	scss :styles
+# end
 
 get '/' do 
 	@used = @drive.get_spreadsheet_values(ENV['SHEET_ID'], 'Used').values
